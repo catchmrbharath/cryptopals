@@ -1,0 +1,14 @@
+[package]
+name = "cryptopals"
+version = "0.1.0"
+authors = ["bharath"]
+
+[dependencies]
+rustc-serialize = "*"
+
+[lib]
+name = "crypto"
+path = "src/crypto/lib.rs"
+
+[[bin]]
+name = "cryptopals"
