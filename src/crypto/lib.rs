@@ -82,11 +82,11 @@ fn hamming_dist_u8(a: u8, b: u8) -> u8
     count
 }
 
-fn combinations(arr: &[[u8]]) -> Vec<([u8], [u8])>
+fn combinations<'a>(arr: &[&'a[u8]]) -> Vec<(&'a[u8], &'a[u8])>
 {
     let len = arr.len();
     let comb_len: usize = len * (len - 1) / 2;
-    let mut comb = Vec::< (u8, u8) >::with_capacity(comb_len);
+    let mut comb = Vec::< (&[u8], &[u8]) >::with_capacity(comb_len);
     for (i, item_a) in arr.iter().enumerate()
     {
         for item_b in arr[i + 1..].iter()
