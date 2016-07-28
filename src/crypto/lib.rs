@@ -2,13 +2,19 @@ extern crate rustc_serialize as serialize;
 
 
 use serialize::hex::{FromHex, ToHex};
-use serialize::base64::{ToBase64, STANDARD};
+use serialize::base64::{ToBase64, FromBase64, STANDARD};
 use std::str;
 pub fn hex_to_base64(hex_string: &str) -> String
 {
     let hex = hex_string.to_string().from_hex().ok().expect("Error in hex string");
     hex.as_slice().to_base64(STANDARD)
 
+}
+
+pub fn base64_to_hex(base64_string: &str) -> String
+{
+    let base64 = base64_string.to_string().from_base64().unwrap();
+    base64.as_slice().to_hex()
 }
 
 pub fn xor_hex(text: &[u8], key: &[u8]) -> Vec<u8>
@@ -108,4 +114,51 @@ pub fn hamming_distance_str(text_a: &str, text_b : &str ) -> u64
     let bytes_a = text_a.to_string().into_bytes();
     let bytes_b = text_b.to_string().into_bytes();
     hamming_distance(&bytes_a, &bytes_b)
+}
+
+pub fn guess_keysize(bytes: &[u8]) -> u32
+{
+    let mut min_score = 10000f64;
+    let mut min_key_size = 0u32;
+    for key_size in 2..41
+    {
+        let chunks = create_chunks(bytes, key_size);
+        let mut count = 0;
+        let mut total_score = 0f64;
+        while count + 4 < chunks.len()
+        {
+            let combs = combinations(&chunks[count..count + 4]);
+            let score = score_hamming(&combs);
+            total_score  += score;
+            count += 4;
+        }
+        total_score = total_score / (key_size * chunks.len()) as f64;
+        if total_score < min_score
+        {
+            min_score = total_score;
+            min_key_size = key_size as u32;
+        }
+    }
+    min_key_size
+}
+
+pub fn score_hamming<'a>(chunks: &[(&'a[u8], &'a[u8])]) -> f64
+{
+    let len = chunks.len();
+    let total = chunks.iter().fold(0, |sum, &(a, b)| sum + hamming_distance(a, b));
+    let ans = total as f64/ len as f64;
+    ans
+}
+
+fn create_chunks(bytes: &[u8], key_size: usize) -> Vec<&[u8]>
+{
+    let mut count: usize = 0;
+    let mut chunks = Vec::<&[u8]>::new();
+    while count + key_size < bytes.len()
+    {
+        chunks.push(&bytes[count..count + key_size]);
+        count += key_size;
+            
+    }
+    chunks
 }

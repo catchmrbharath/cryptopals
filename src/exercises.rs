@@ -4,6 +4,7 @@ use std::path;
 use std::io::BufReader;
 use std::fs::File;
 use std::io::BufRead;
+use std::io::Read;
 pub fn ex1()
 {
     println!("Exercise 1.1");
@@ -66,5 +67,20 @@ pub fn ex6()
     let text_a = "this is a test";
     let text_b = "wokka wokka!!!";
     println!("{}", crypto::hamming_distance_str(text_a, text_b));
+
+    let temp_a = text_a.to_string().into_bytes();
+    let temp_b = text_b.to_string().into_bytes();
+    let mut temp = Vec::<(&[u8], &[u8])>::new();
+    temp.push((&temp_a, &temp_b));
+    println!("Test {}", crypto::score_hamming(&temp));
+
+
+    let filename = path::Path::new("src/data/6.txt");
+    let file = File::open(filename);
+    let mut base64 = String::new();
+    file.unwrap().read_to_string(& mut base64);
+    let hex = crypto::base64_to_hex(&base64);
+    let bytes = crypto::hex_to_bytes(&hex);
+    println!("{}", crypto::guess_keysize(&bytes));
 }
 
