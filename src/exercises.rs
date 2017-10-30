@@ -21,7 +21,7 @@ pub fn ex2()
     let key = "686974207468652062756c6c277320657965";
     let text_bytes = crypto::hex_to_bytes(text);
     let key_bytes = crypto::hex_to_bytes(key);
-    let out = crypto::xor_hex(&text_bytes, &key_bytes);
+    let out = crypto::xor_bytes(&text_bytes, &key_bytes);
     println!("{}", crypto::bytes_to_hex(&out));
 }
 
@@ -30,7 +30,12 @@ pub fn ex3()
 {
     println!("\n Exercise 1.3");
     let text = "1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736";
-    println!("The decoded string is: {:?}", crypto::single_char_xor(text));
+    let text_bytes = crypto::hex_to_bytes(text);
+    let guesses = crypto::single_char_xor_score(&text_bytes, 6);
+    for (_, guess_char) in guesses {
+        let decoded = str::from_utf8(&crypto::xor_bytes(&text_bytes, &vec![guess_char as u8;1])).unwrap_or("").to_string();
+    println!("The decoded string is: {:?}", decoded);
+    }
 }
 
 
@@ -41,16 +46,19 @@ pub fn ex4()
     let reader = BufReader::new(file.unwrap());
     let lines = reader.lines();
     let mut max_score = 0;
-    let mut max_string:String = String::new();
+    let mut max_string = String::new();
     for l in lines {
-        let (temp_score, temp_string) = crypto::single_char_xor(str::trim(&l.unwrap()));
+        let mut temp_line = l.unwrap();
+        let line = str::trim(&temp_line);
+        let line_bytes = crypto::hex_to_bytes(line);
+        let (temp_score, temp_char) = crypto::single_char_xor_score(&line_bytes, 1)[0].clone();
         if max_score < temp_score
         {
             max_score = temp_score;
-            max_string = temp_string;
+            max_string = str::from_utf8(&crypto::xor_bytes(&line_bytes, &vec![temp_char as u8;1])).unwrap_or("").to_string();
         }
     }
-    println!("The decrypted string is {}", &max_string);
+    println!("The decrypted string is {}", max_string);
     
 }
 
@@ -58,29 +66,24 @@ pub fn ex5()
 {
     let text = "Burning 'em, if you ain't quick and nimble
 I go crazy when I hear a cymbal";
-    let out = crypto::xor_hex(&text.to_string().into_bytes(), &"ICE".to_string().into_bytes());
+    let out = crypto::xor_bytes(&text.to_string().into_bytes(), &"ICE".to_string().into_bytes());
     println!("{}", crypto::bytes_to_hex(&out));
 }
 
 pub fn ex6()
 {
-    let text_a = "this is a test";
-    let text_b = "wokka wokka!!!";
-    println!("{}", crypto::hamming_distance_str(text_a, text_b));
-
-    let temp_a = text_a.to_string().into_bytes();
-    let temp_b = text_b.to_string().into_bytes();
-    let mut temp = Vec::<(&[u8], &[u8])>::new();
-    temp.push((&temp_a, &temp_b));
-    println!("Test {}", crypto::score_hamming(&temp));
-
-
     let filename = path::Path::new("src/data/6.txt");
     let file = File::open(filename);
     let mut base64 = String::new();
-    file.unwrap().read_to_string(& mut base64);
+    file.unwrap().read_to_string(& mut base64).expect("file to be opened");
     let hex = crypto::base64_to_hex(&base64);
-    let bytes = crypto::hex_to_bytes(&hex);
-    println!("{}", crypto::guess_keysize(&bytes));
+    let encrypted = crypto::hex_to_bytes(&hex);
+    let guess_keysize = crypto::guess_keysize(&encrypted, 1)[0];
+    println!("guess key_size: {:?}", crypto::guess_keysize(&encrypted, 2));
+    let key = crypto::key_vignere(&encrypted, guess_keysize);
+    println!("guessed key: {}", key);
+    let decrypted = str::from_utf8(&crypto::xor_bytes(&encrypted, &key.into_bytes())).unwrap_or("").to_string();
+    println!("decrypted text: {}", decrypted);
+
 }
 
